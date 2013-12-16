@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" ?>
+
+<!-- Ant to compile and create jars for BDA labs. -->
+
+<project name="bda_labs" default="jar" basedir=".">
+
+	<!-- initialization: executed for all targets -->
+	<target name="compile">
+		<!-- program version -->
+		<property name="version" value="0.1"/>
+		
+		<!-- temporary directory for compiling (will be removed) -->
+		<property name="classDir" value="class"/>
+		
+		<!-- classpath: all files in lib -->
+		<mkdir dir="${classDir}"/>		
+		<path id="classpath">
+			<fileset dir="lib" includes="**/*.jar"/>
+		</path>
+		
+		<!-- source files -->
+		<javac 	srcdir="src"
+				classpathref="classpath"
+				destdir="${classDir}"
+				debug="on"/>
+		
+	</target>
+
+	<!-- unpack libraries and put with compiled files -->
+	<target name="unpack">
+	
+		<copy todir="${classDir}">
+			<fileset dir="lib"/>
+		</copy>
+		
+		<unzip dest="${classDir}">
+			<fileset dir="${classDir}" includes="*.jar"/>
+		</unzip> 
+		
+		<delete includeEmptyDirs="true">
+			<fileset dir="${classDir}" includes="**/*.jar" />					
+			<fileset dir="${classDir}/webapps" includes="**" />
+			<fileset dir="${classDir}" includes="*.tgz" />
+			<fileset dir="${classDir}/META-INF" includes="**"/>
+			<fileset dir="jar" includes="bda_labs_${version}.jar" />
+		</delete>
+		
+	</target>
+	
+	<!-- executable jar from hadoop -->
+	<target name="jar" depends="compile,unpack">
+		<jar jarfile="jar/bda_labs_${version}.jar" 
+		     basedir="${classDir}" >
+		</jar>
+		
+		<delete includeEmptyDirs="true">
+			<fileset dir="${classDir}" includes="**"/>
+		</delete>	
+	</target>
+    
+</project>
