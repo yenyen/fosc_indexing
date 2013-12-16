@@ -1,5 +1,8 @@
 package heigvd.bda.labs.foscindexing;
 
+import heigvd.bda.labs.utils.ListNameWritable;
+import heigvd.bda.labs.utils.Name;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -18,8 +21,6 @@ public class FoscIndexing extends Configured implements Tool {
 	private Path inputPath;
 	private Path outputPath;
 	
-	//private final static String ASTERISK = "\0";
-	public final static IntWritable ONE = new IntWritable(1);
 	
 	/**
 	 * OrderInversion Constructor.
@@ -133,6 +134,71 @@ public class FoscIndexing extends Configured implements Tool {
 				context.write(key, NullWritable.get());
 		}
 	}
+	
+	
+	public static class IndexEntrepriseNameMapper extends Mapper<LongWritable, Text, Text, ListNameWritable> {
+		List<String> firstNames;
+		List<String> wordsPreviousFirstNames;
+		Text entreprise;
+		ListNameWritable names;
+
+		@Override
+		protected void setup(Context context) throws IOException,
+				InterruptedException {
+			firstNames = new ArrayList<String>();
+			wordsPreviousFirstNames = new ArrayList<String>();
+			//READ FILE HERE			
+			entreprise = new Text();
+			names = new ListNameWritable();
+			
+			super.setup(context);
+		}
+
+		@Override
+		public void map(LongWritable key, Text value, Context context)
+			throws java.io.IOException, InterruptedException {
+			String[] tokens = FoscIndexing.words(value.toString());
+			entreprise.set(getEntrepriseName(value.toString()));
+			
+			for (int i = 1; i < tokens.length - 2; i++) {
+				if(firstNames.contains(tokens[i]) || wordsPreviousFirstNames.contains(tokens[i - 1]))
+					names.getNames().add(new Name(tokens[i], tokens[i + 1]));
+			}
+		
+			if(names.getNames().size() > 0)
+			{
+				context.write(entreprise, names);
+				names.clear();
+			}
+		}
+
+		private String getEntrepriseName(String string) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	}
+	
+	
+	public static class IndexEntrepriseNameReducer extends Reducer<Text, ListNameWritable, Text, ListNameWritable> {
+		ListNameWritable result;
+		
+		@Override
+		protected void setup(Context context) {
+			result = new ListNameWritable();
+		}
+		
+		@Override
+		public void reduce(Text key, Iterable<ListNameWritable> values, Context context) 
+			throws IOException, InterruptedException {		
+			result.clear();
+			for(ListNameWritable value : values) {
+				result.join(value);
+			}
+			context.write(key, result);
+		}
+	}
+	
+	
 
 	@Override
 	public int run(String[] args) throws Exception {
@@ -158,10 +224,6 @@ public class FoscIndexing extends Configured implements Tool {
 
 		FileOutputFormat.setOutputPath(job, outputPath);
 		job.setOutputFormatClass(TextOutputFormat.class);
-
-		//job.setPartitionerClass(PartitionerTextPair.class);
-		//job.setSortComparatorClass(TextPair.Comparator.class);
-		// TODO: set the partitioner and sort order
 
 		job.setNumReduceTasks(numReducers);
 
