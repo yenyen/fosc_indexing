@@ -3,10 +3,15 @@ package heigvd.bda.labs.foscindexing;
 import heigvd.bda.labs.utils.ListNameWritable;
 import heigvd.bda.labs.utils.Name;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
@@ -19,7 +24,11 @@ public class FoscIndexing extends Configured implements Tool {
 	
 	private int numReducers;
 	private Path inputPath;
-	private Path outputPath;
+	private static Path outputPathFilterFrArticle;
+	private static Path outputPathBeforeFirstname;
+	private static Path outputPathIndexEntreprise;
+	private static Path firstNamePath;
+	private static String REG_NAME = "[A-Z][a-z?]+(\\-[A-Z][a-z?]+)?";
 	
 	
 	/**
@@ -28,13 +37,16 @@ public class FoscIndexing extends Configured implements Tool {
 	 * @param args
 	 */
 	public FoscIndexing(String[] args) {
-		if (args.length != 3) {
-			System.out.println("Usage: OrderInversion <num_reducers> <input_path> <output_path>");
+		if (args.length != 4) {
+			System.out.println("Usage: OrderInversion <num_reducers> <input_path> <output_path> <firstname_path>");
 			System.exit(0);
 		}
 		numReducers = Integer.parseInt(args[0]);
 		inputPath = new Path(args[1]);
-		outputPath = new Path(args[2]);
+		outputPathFilterFrArticle = new Path(args[2] + "_0");
+		outputPathBeforeFirstname = new Path(args[2] + "_1");
+		outputPathIndexEntreprise = new Path(args[2] + "_2");
+		firstNamePath = new Path(args[3]);
 	}
 	
 	/**
@@ -46,15 +58,52 @@ public class FoscIndexing extends Configured implements Tool {
 	 * @return words in text as an Array of String
 	 */
 	public static String[] words(String text) {
-		text = text.toLowerCase();
-		text = text.replaceAll("[^a-z]+", " ");
+		//text = text.toLowerCase();
+		text = text.replaceAll("[^a-zA-Z?\\-]+", " ");
 		text = text.replaceAll("^\\s+", "");	
 	    StringTokenizer st = new StringTokenizer(text);
 	    ArrayList<String> result = new ArrayList<String>();
 	    while (st.hasMoreTokens())
 	    	result.add(st.nextToken());
 	    return Arrays.copyOf(result.toArray(),result.size(),String[].class);
-	}	
+	}
+	
+	
+	public static HashSet<String> readFile(Configuration conf, Path path) throws IOException
+	{
+	    //hardcoded or set it in the jobrunner class and retrieve via this key
+	   // String location = conf.get("job.stopwords.path");
+	   // if (location != null) {
+		HashSet<String> result = new HashSet<String>();
+        BufferedReader br = null;
+        try {
+            FileSystem fs = FileSystem.get(conf);
+           // Path path = new Path(location);
+            if (fs.exists(path)) {
+            	FileStatus[] files = fs.listStatus(path);
+            	for(FileStatus file : files)
+            	{
+	                FSDataInputStream fis = fs.open(file.getPath());
+	                br = new BufferedReader(new InputStreamReader(fis));
+	                String line = null;
+	                while ((line = br.readLine()) != null && line.trim().length() > 0) {
+	                	result.add(line);
+	                }
+            	}
+            	System.out.println(result);
+            }
+            else
+            {
+            	throw new IOException("Directory not found");
+            }
+        }
+        finally {
+        	IOUtils.closeStream(br);
+            //IOUtils.closeQuietly(br);
+        }
+
+        return result;
+	}
 	
 	/*public static class PartitionerTextPair extends Partitioner<TextPair, IntWritable> {
 		
@@ -64,21 +113,32 @@ public class FoscIndexing extends Configured implements Tool {
 	        int partition = hash % numPartitions;
 	        return partition;
 		}
+		conf.setNumReduceTasks(0)
 	}*/
 	
+	public static class FilterFrArticleMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
+		@Override
+		public void map(LongWritable key, Text value, Context context)
+			throws java.io.IOException, InterruptedException {
+			if(value.toString().contains("LANG=\"FR\""))
+				context.write(value, NullWritable.get());
+		}
+	}
+	
+	
 	public static class BeforeFirstnameMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
-		List<String> firstNames;
+		Set<String> firstNames;
 		IntWritable nextFirstName;
 		IntWritable nextNotFirstName;
 		Text outKey;
 		@Override
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
-			firstNames = new ArrayList<String>();
-			//READ FILE HERE			
+			firstNames = FoscIndexing.readFile(context.getConfiguration(), firstNamePath);	
+			System.out.println(firstNames);
 			nextFirstName = new IntWritable(1);
 			nextNotFirstName = new IntWritable(-1);
-
+			outKey = new Text();
 			super.setup(context);
 		}
 
@@ -86,10 +146,9 @@ public class FoscIndexing extends Configured implements Tool {
 		public void map(LongWritable key, Text value, Context context)
 			throws java.io.IOException, InterruptedException {
 			String[] tokens = FoscIndexing.words(value.toString());
-			
 			for (int i = 1; i < tokens.length-1; i++) {
 				outKey.set(tokens[i - 1]);
-				if(firstNames.contains(tokens[i]))
+				if(firstNames.contains(tokens[i].toUpperCase()) && tokens[i].matches(REG_NAME))
 					context.write(outKey, nextFirstName);
 				else
 					context.write(outKey, nextNotFirstName);
@@ -137,17 +196,44 @@ public class FoscIndexing extends Configured implements Tool {
 	
 	
 	public static class IndexEntrepriseNameMapper extends Mapper<LongWritable, Text, Text, ListNameWritable> {
-		List<String> firstNames;
-		List<String> wordsPreviousFirstNames;
+		Set<String> firstNames;
+		Set<String> wordsPreviousFirstNames;
 		Text entreprise;
 		ListNameWritable names;
+		Set<String> linkNames;
+		Set<String> linkMaybeNames;
+		Set<String> linkNeverNames;
+	
 
 		@Override
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
-			firstNames = new ArrayList<String>();
-			wordsPreviousFirstNames = new ArrayList<String>();
-			//READ FILE HERE			
+			Configuration conf = context.getConfiguration();
+			
+			linkNames = new HashSet<String>();
+			linkNames.add("dr");
+			linkNames.add("dos");
+			linkNames.add("di");
+			
+			linkMaybeNames = new HashSet<String>();
+			linkMaybeNames.add("von");
+			linkMaybeNames.add("de");
+			
+			linkNeverNames = new HashSet<String>();
+			linkNeverNames.add("st");
+			linkNeverNames.add("saint");
+			linkNeverNames.add("sainte");
+			linkNeverNames.add("firma");
+			linkNeverNames.add("soci?t?");
+			linkNeverNames.add("le");
+			linkNeverNames.add("la");
+			
+			firstNames = readFile(conf, firstNamePath);
+			wordsPreviousFirstNames = readFile(conf, outputPathBeforeFirstname);
+			
+			System.out.println("------------------------\n" + firstNames);
+			System.out.println("------------------------\n" + wordsPreviousFirstNames);
+			
 			entreprise = new Text();
 			names = new ListNameWritable();
 			
@@ -158,11 +244,45 @@ public class FoscIndexing extends Configured implements Tool {
 		public void map(LongWritable key, Text value, Context context)
 			throws java.io.IOException, InterruptedException {
 			String[] tokens = FoscIndexing.words(value.toString());
-			entreprise.set(getEntrepriseName(value.toString()));
-			
+			boolean entrepriseFind = false;
+			//entreprise.set(getEntrepriseName(value.toString()));
 			for (int i = 1; i < tokens.length - 2; i++) {
-				if(firstNames.contains(tokens[i]) || wordsPreviousFirstNames.contains(tokens[i - 1]))
-					names.getNames().add(new Name(tokens[i], tokens[i + 1]));
+				if(tokens[i - 1].equals("NAME") && !entrepriseFind)
+				{
+					entrepriseFind = true;
+					String ent = "";
+					while(!tokens[i + 1].equals("NAME"))
+					{
+						ent += " " + tokens[i];
+						i++;
+					}
+					entreprise.set(ent);
+				}
+				else if((firstNames.contains(tokens[i].toUpperCase()) || wordsPreviousFirstNames.contains(tokens[i - 1])) 
+						&& tokens[i].matches(REG_NAME) && !linkNeverNames.contains(tokens[i].toLowerCase()))
+				{
+					if(linkNames.contains(tokens[i + 1].toLowerCase()))
+					{
+						names.getNames().add(new Name(tokens[i], tokens[i + 1] + " " + tokens[i + 2]));
+					}
+					else if(tokens[i + 1].matches(REG_NAME) && 
+							!linkNeverNames.contains(tokens[i + 1].toLowerCase()) && 
+							!linkMaybeNames.contains(tokens[i + 1].toLowerCase()))
+					{
+						names.getNames().add(new Name(tokens[i], tokens[i + 1]));
+					}
+					else if(tokens[i - 1].matches(REG_NAME) && !linkNeverNames.contains(tokens[i - 1].toLowerCase()))
+					{
+						if(linkNames.contains(tokens[i - 2].toLowerCase()) || linkMaybeNames.contains(tokens[i -2].toLowerCase()))
+							names.getNames().add(new Name(tokens[i], tokens[i - 2] + " " + tokens[i - 1]));
+						else
+							names.getNames().add(new Name(tokens[i], tokens[i - 1]));
+					}
+					else if(linkMaybeNames.contains(tokens[i + 1].toLowerCase()) && tokens[i + 2].matches(REG_NAME))
+					{
+						names.getNames().add(new Name(tokens[i], tokens[i + 1] + " " + tokens[i + 2]));
+					}
+				}
 			}
 		
 			if(names.getNames().size() > 0)
@@ -170,11 +290,6 @@ public class FoscIndexing extends Configured implements Tool {
 				context.write(entreprise, names);
 				names.clear();
 			}
-		}
-
-		private String getEntrepriseName(String string) {
-			// TODO Auto-generated method stub
-			return null;
 		}
 	}
 	
@@ -204,8 +319,41 @@ public class FoscIndexing extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		
 		Configuration conf = getConf();
-		Job job = new Job(conf, "Order Inversion");
+		if(runJobFilterFrArticle(conf))
+		{
+			if(runJobBeforeFirstname(conf))
+				if(runJobIndexEntrepriseName(conf))
+					return 0;
+		}
+		return 1;
+	}
+	
+	public boolean runJobFilterFrArticle(Configuration conf) throws Exception {
+		Job job = new Job(conf, "fosc_indexing");
+		job.setJarByClass(FoscIndexing.class);
 
+		job.setMapperClass(FilterFrArticleMapper.class);
+
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(NullWritable.class);
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(NullWritable.class);
+		
+		TextInputFormat.addInputPath(job, inputPath);
+		job.setInputFormatClass(TextInputFormat.class);
+
+		FileOutputFormat.setOutputPath(job, outputPathFilterFrArticle);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		job.setNumReduceTasks(0);
+
+		return job.waitForCompletion(true);
+	}
+	
+	public boolean runJobBeforeFirstname(Configuration conf) throws Exception {
+		
+		Job job = new Job(conf, "fosc_indexing");
 		job.setJarByClass(FoscIndexing.class);
 
 		job.setMapperClass(BeforeFirstnameMapper.class);
@@ -219,15 +367,42 @@ public class FoscIndexing extends Configured implements Tool {
 
 		job.setCombinerClass(BeforeFirstnameCombiner.class);
 		
-		TextInputFormat.addInputPath(job, inputPath);
+		TextInputFormat.addInputPath(job, outputPathFilterFrArticle);
 		job.setInputFormatClass(TextInputFormat.class);
 
-		FileOutputFormat.setOutputPath(job, outputPath);
+		FileOutputFormat.setOutputPath(job, outputPathBeforeFirstname);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		job.setNumReduceTasks(numReducers);
 
-		return job.waitForCompletion(true) ? 0 : 1;
+		return job.waitForCompletion(true);
+	}
+	
+	public boolean runJobIndexEntrepriseName(Configuration conf) throws Exception {
+		
+		Job job = new Job(conf, "fosc_indexing");
+		job.setJarByClass(FoscIndexing.class);
+
+		job.setMapperClass(IndexEntrepriseNameMapper.class);
+		job.setReducerClass(IndexEntrepriseNameReducer.class);
+
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(ListNameWritable.class);
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(ListNameWritable.class);
+
+		job.setCombinerClass(IndexEntrepriseNameReducer.class);
+		
+		TextInputFormat.addInputPath(job,  outputPathFilterFrArticle);
+		job.setInputFormatClass(TextInputFormat.class);
+
+		FileOutputFormat.setOutputPath(job, outputPathIndexEntreprise);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		job.setNumReduceTasks(numReducers);
+
+		return job.waitForCompletion(true);
 	}
 
 	public static void main(String[] args) throws Exception {
