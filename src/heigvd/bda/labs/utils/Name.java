@@ -1,6 +1,9 @@
 package heigvd.bda.labs.utils;
 
 import java.io.*;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.apache.hadoop.io.*;
 
@@ -11,35 +14,56 @@ import org.apache.hadoop.io.*;
  */
 public class Name {
 
-	private String firstName;
-	private String lastName;
+	private Set<String> names;
 
 	public Name() {
+		names = new LinkedHashSet<String>();
 	}
 	
-	public Name(String firstName, String lastName) {
-		this.firstName = firstName;
-		this.lastName = lastName;
+	public void addName(String name) {
+		names.add(name);
 	}
 	
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-	
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
+	public Set<String> getNames() {
+		return names;
 	}
 
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-	
 	@Override
 	public String toString() {
-		return firstName + "\t" + lastName;
+		StringBuilder sb = new StringBuilder();
+		for(String n : names) {
+			sb.append(n);
+			sb.append(" ");
+		}
+		return sb.toString().trim();
 	}
+	
+	
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((names == null) ? 0 : names.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Name other = (Name) obj;
+		if (names == null) {
+			if (other.names != null)
+				return false;
+		} else if (!names.equals(other.names))
+			return false;
+		return true;
+	}
+	
+	
 }

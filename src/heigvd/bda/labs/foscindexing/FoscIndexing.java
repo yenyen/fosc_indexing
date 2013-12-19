@@ -28,7 +28,7 @@ public class FoscIndexing extends Configured implements Tool {
 	private static Path outputPathBeforeFirstname;
 	private static Path outputPathIndexEntreprise;
 	private static Path firstNamePath;
-	private static String REG_NAME = "[A-Z][a-z?]+(\\-[A-Z][a-z?]+)?";
+	private static String REG_NAME = "[A-Z][a-z?][a-z?]+(\\-[A-Z][a-z?]+)?";
 	
 	
 	/**
@@ -214,6 +214,7 @@ public class FoscIndexing extends Configured implements Tool {
 			linkNames.add("dr");
 			linkNames.add("dos");
 			linkNames.add("di");
+			linkNames.add("me");
 			
 			linkMaybeNames = new HashSet<String>();
 			linkMaybeNames.add("von");
@@ -261,26 +262,41 @@ public class FoscIndexing extends Configured implements Tool {
 				else if((firstNames.contains(tokens[i].toUpperCase()) || wordsPreviousFirstNames.contains(tokens[i - 1])) 
 						&& tokens[i].matches(REG_NAME) && !linkNeverNames.contains(tokens[i].toLowerCase()))
 				{
+					Name name = null;
 					if(linkNames.contains(tokens[i + 1].toLowerCase()))
 					{
-						names.getNames().add(new Name(tokens[i], tokens[i + 1] + " " + tokens[i + 2]));
+						name = new Name();
+						name.addName(tokens[i + 1]);
+						name.addName(tokens[i + 2]);
 					}
 					else if(tokens[i + 1].matches(REG_NAME) && 
 							!linkNeverNames.contains(tokens[i + 1].toLowerCase()) && 
 							!linkMaybeNames.contains(tokens[i + 1].toLowerCase()))
 					{
-						names.getNames().add(new Name(tokens[i], tokens[i + 1]));
+						name = new Name();
+						name.addName(tokens[i + 1]);
+						if(linkNames.contains(tokens[i + 1]))
+								name.addName(tokens[i + 2]);
 					}
 					else if(tokens[i - 1].matches(REG_NAME) && !linkNeverNames.contains(tokens[i - 1].toLowerCase()))
 					{
+						name = new Name();
 						if(linkNames.contains(tokens[i - 2].toLowerCase()) || linkMaybeNames.contains(tokens[i -2].toLowerCase()))
-							names.getNames().add(new Name(tokens[i], tokens[i - 2] + " " + tokens[i - 1]));
-						else
-							names.getNames().add(new Name(tokens[i], tokens[i - 1]));
+							name.addName(tokens[i - 2]);
+						
+						name.addName(tokens[i - 1]);
 					}
 					else if(linkMaybeNames.contains(tokens[i + 1].toLowerCase()) && tokens[i + 2].matches(REG_NAME))
 					{
-						names.getNames().add(new Name(tokens[i], tokens[i + 1] + " " + tokens[i + 2]));
+						name = new Name();
+						name.addName(tokens[i + 1]);
+						name.addName(tokens[i + 2]);
+					}
+					
+					if(name != null)
+					{
+						name.addName(tokens[i]);
+						names.getNames().add(name);
 					}
 				}
 			}
