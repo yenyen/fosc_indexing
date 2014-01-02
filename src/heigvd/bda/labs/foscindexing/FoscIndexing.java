@@ -68,7 +68,7 @@ public class FoscIndexing extends Configured implements Tool {
 	
 	/**
 	 * Utility to split a line of text in sentences.
-	 * @param text whwat we want to split
+	 * @param text what we want to split
 	 * @return sentences in text as an Array of String
 	 */
 	public static String[] sentences(String text) {
