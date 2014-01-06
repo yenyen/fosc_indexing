@@ -1,23 +1,38 @@
 package heigvd.bda.labs.foscindexing;
 
+import heigvd.bda.labs.utils.EnterpriseArticles;
 import heigvd.bda.labs.utils.ListNameWritable;
 import heigvd.bda.labs.utils.Name;
+import heigvd.bda.labs.utils.PersonneArticles;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
 
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.*;
-import org.apache.hadoop.util.*;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 
 public class FoscIndexing extends Configured implements Tool {
@@ -27,6 +42,8 @@ public class FoscIndexing extends Configured implements Tool {
 	public static Path outputPathFilterFrArticle;
 	public static Path outputPathBeforeFirstname;
 	public static Path outputPathIndexEntreprise;
+	public static Path outputPathEntreprisePersonArticles;
+	public static Path outputPathPersonEntrepriseArticles;
 	public static Path firstNamePath;
 	public static String REG_NAME = "[A-Z][a-z?]{2,}(\\-[A-Z][a-z?]{2,})?";
 	private static int NB_TIMES_BEFORE_FIRSTNAME = 2;
@@ -46,6 +63,8 @@ public class FoscIndexing extends Configured implements Tool {
 		outputPathFilterFrArticle = new Path(args[2] + "_0");
 		outputPathBeforeFirstname = new Path(args[2] + "_1");
 		outputPathIndexEntreprise = new Path(args[2] + "_2");
+		outputPathEntreprisePersonArticles = new Path(args[2] + "_3");
+		outputPathPersonEntrepriseArticles = new Path(args[2] + "_4");
 		firstNamePath = new Path(args[3]);
 	}
 	
@@ -535,9 +554,12 @@ public class FoscIndexing extends Configured implements Tool {
 		Configuration conf = getConf();
 		if(runJobFilterFrArticle(conf))
 		{
-			if(runJobBeforeFirstname(conf))
-				if(runJobIndexEntrepriseName(conf))
+			if(runJobBeforeFirstname(conf)){
+//				if(runJobIndexEntrepriseName(conf))
+//					return 0;
+				if(runJobEntreprisePersonArticles(conf) && runJobPersonEntrepriseArticles(conf))
 					return 0;
+			}
 		}
 		return 1;
 	}
@@ -616,6 +638,68 @@ public class FoscIndexing extends Configured implements Tool {
 		job.setInputFormatClass(TextInputFormat.class);
 
 		FileOutputFormat.setOutputPath(job, outputPathIndexEntreprise);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		job.setNumReduceTasks(numReducers);
+
+		return job.waitForCompletion(true);
+	}
+	
+	public boolean runJobEntreprisePersonArticles(Configuration conf) throws Exception {
+		
+		Job job = new Job(conf, "fosc_indexing");
+		job.setJarByClass(FoscIndexing.class);
+
+		job.setMapperClass(PersonneArticlesMapper.class);
+		/*or
+		job.setMapperClass(IndexEntrepriseNameMapper.class);
+		*/
+
+		job.setReducerClass(PersonneArticlesReducer.class);
+
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(PersonneArticles.class);
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(PersonneArticles.class);
+
+		job.setCombinerClass(PersonneArticlesReducer.class);
+		
+		TextInputFormat.addInputPath(job,  outputPathFilterFrArticle);
+		job.setInputFormatClass(TextInputFormat.class);
+
+		FileOutputFormat.setOutputPath(job, outputPathEntreprisePersonArticles);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		job.setNumReduceTasks(numReducers);
+
+		return job.waitForCompletion(true);
+	}
+	
+	public boolean runJobPersonEntrepriseArticles(Configuration conf) throws Exception {
+		
+		Job job = new Job(conf, "fosc_indexing");
+		job.setJarByClass(FoscIndexing.class);
+
+		job.setMapperClass(EnterpriseArticlesMapper.class);
+		/*or
+		job.setMapperClass(IndexEntrepriseNameMapper.class);
+		*/
+
+		job.setReducerClass(EnterpriseArticlesReducer.class);
+
+		job.setMapOutputKeyClass(Name.class);
+		job.setMapOutputValueClass(EnterpriseArticles.class);
+
+		job.setOutputKeyClass(Name.class);
+		job.setOutputValueClass(EnterpriseArticles.class);
+
+		job.setCombinerClass(EnterpriseArticlesReducer.class);
+		
+		TextInputFormat.addInputPath(job,  outputPathEntreprisePersonArticles);
+		job.setInputFormatClass(TextInputFormat.class);
+
+		FileOutputFormat.setOutputPath(job, outputPathPersonEntrepriseArticles);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
 		job.setNumReduceTasks(numReducers);

@@ -1,10 +1,10 @@
 package heigvd.bda.labs.foscindexing;
 
 import heigvd.bda.labs.utils.EnterpriseArticles;
+import heigvd.bda.labs.utils.Name;
 
 import java.io.IOException;
 
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 /**
@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.Reducer;
  * @author aurelien
  *
  */
-public class EnterpriseArticlesReducer extends Reducer<Text, EnterpriseArticles, Text, EnterpriseArticles> {
+public class EnterpriseArticlesReducer extends Reducer<Name, EnterpriseArticles, Name, EnterpriseArticles> {
 	EnterpriseArticles result;
 	
 	@Override
@@ -23,7 +23,7 @@ public class EnterpriseArticlesReducer extends Reducer<Text, EnterpriseArticles,
 	}
 	
 	@Override
-	public void reduce(Text key, Iterable<EnterpriseArticles> values, Context context) 
+	public void reduce(Name key, Iterable<EnterpriseArticles> values, Context context) 
 		throws IOException, InterruptedException {		
 		result.clear();
 		for(EnterpriseArticles value : values) {

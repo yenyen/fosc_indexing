@@ -91,18 +91,26 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 
 	@Override
 	public String toString() {
-		// n:"Entreprise" v: "{ 	Personne { 123, 1234, 45, 555}, 	Personne { 123, 1234, 45, 555}, 	Personne { 123, 1234, 45, 555}, }"
-		//
-		// JSon o=new JSon();
-		// JSon personJson=new Json();
-		//
-		// personJson.add(n, "Personne")
-		// personJson.addArray("v", artciles);
-		// o.add("n", "Enterprise")
-		//
-		// o.addArray("v", personJson)
-		//ok
-		//Loreant Hugo:1,2,4,5,6;
-		return super.toString();
+
+		//Lorent Hugo:1,2,4,5,6;George Micheal:13,24,45,56,67;
+		
+		StringBuilder sb=new StringBuilder();
+		Set<Entry<K, List<Long>>> items = map.entrySet();
+		for (Entry<K, List<Long>> entry : items) {
+			K key = entry.getKey();
+			sb.append(key.toString());
+			sb.append(':');
+			boolean isFirstOnde=true;
+			for(Long articleId:entry.getValue()){
+				sb.append(articleId);
+				if(isFirstOnde==false)
+					sb.append(',');
+				sb.append(articleId);
+				
+				isFirstOnde=false;
+			}
+			sb.append(';');
+		}
+		return sb.toString();
 	}
 }

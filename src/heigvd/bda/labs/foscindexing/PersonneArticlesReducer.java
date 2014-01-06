@@ -1,6 +1,5 @@
 package heigvd.bda.labs.foscindexing;
 
-import heigvd.bda.labs.utils.ListNameWritable;
 import heigvd.bda.labs.utils.PersonneArticles;
 
 import java.io.IOException;

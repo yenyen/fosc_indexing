@@ -3,7 +3,9 @@ package heigvd.bda.labs.utils;
 import java.io.*;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.io.*;
 
@@ -37,7 +39,7 @@ public class Name implements Writable {
 		StringBuilder sb = new StringBuilder();
 		for(String n : tokens) {
 			sb.append(n);
-			sb.append(" ");
+			sb.append(' ');
 		}
 		return sb.toString().trim();
 	}
@@ -91,6 +93,10 @@ public class Name implements Writable {
 		}
 
 		
+	}
+	
+	public void clear(){
+		tokens.clear();
 	}
 	
 	
