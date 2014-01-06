@@ -138,4 +138,12 @@ public class FormModel {
 			br.close();
 		}
 	}
+	
+	public static Long extractArticleNumber(String s){
+		int i=s.indexOf("<?");
+		if(i<0)
+			return null;
+		return Long.parseLong(s.substring(0, i-1).trim());
+		
+	}
 }

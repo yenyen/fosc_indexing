@@ -24,11 +24,11 @@ public class FoscIndexing extends Configured implements Tool {
 	
 	private int numReducers;
 	private Path inputPath;
-	private static Path outputPathFilterFrArticle;
-	private static Path outputPathBeforeFirstname;
-	private static Path outputPathIndexEntreprise;
-	private static Path firstNamePath;
-	private static String REG_NAME = "[A-Z][a-z?]{2,}(\\-[A-Z][a-z?]{2,})?";
+	public static Path outputPathFilterFrArticle;
+	public static Path outputPathBeforeFirstname;
+	public static Path outputPathIndexEntreprise;
+	public static Path firstNamePath;
+	public static String REG_NAME = "[A-Z][a-z?]{2,}(\\-[A-Z][a-z?]{2,})?";
 	private static int NB_TIMES_BEFORE_FIRSTNAME = 2;
 	
 	/**

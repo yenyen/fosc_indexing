@@ -12,26 +12,30 @@ import org.apache.hadoop.io.*;
  * 
  * Reference: Tom White's "Hadoop the definitive guide"
  */
-public class Name {
+public class Name implements Writable {
 
-	private Set<String> names;
+	private Set<String> tokens;
 
 	public Name() {
-		names = new LinkedHashSet<String>();
+		tokens = new LinkedHashSet<String>();
+	}
+	public Name(String s) {
+		this();
+		addName(s);
 	}
 	
 	public void addName(String name) {
-		names.add(name);
+		tokens.add(name);
 	}
 	
 	public Set<String> getNames() {
-		return names;
+		return tokens;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for(String n : names) {
+		for(String n : tokens) {
 			sb.append(n);
 			sb.append(" ");
 		}
@@ -44,7 +48,7 @@ public class Name {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((names == null) ? 0 : names.hashCode());
+		result = prime * result + ((tokens == null) ? 0 : tokens.hashCode());
 		return result;
 	}
 
@@ -57,12 +61,36 @@ public class Name {
 		if (getClass() != obj.getClass())
 			return false;
 		Name other = (Name) obj;
-		if (names == null) {
-			if (other.names != null)
+		if (tokens == null) {
+			if (other.tokens != null)
 				return false;
-		} else if (!names.equals(other.names))
+		} else if (!tokens.equals(other.tokens))
 			return false;
 		return true;
+	}
+
+	@Override
+	public void readFields(DataInput in) throws IOException {
+		int lenNames = in.readInt();
+		for(int j = 0; j < lenNames; j++) {
+			int l = in.readInt();
+			byte[] ba = new byte[l];
+			in.readFully(ba);
+			tokens.add(new String(ba));
+		}
+
+		
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		out.writeInt(tokens.size());
+		for(String n : tokens) {
+			out.writeInt(n.length());
+			out.writeBytes(n);
+		}
+
+		
 	}
 	
 	

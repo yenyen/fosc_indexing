@@ -35,14 +35,9 @@ public class ListNameWritable implements Writable {
 		
 		int len = in.readInt();
 		for (int i = 0; i < len; i++) {
-			int lenNames = in.readInt();
+			
 			Name name = new Name();
-			for(int j = 0; j < lenNames; j++) {
-				int l = in.readInt();
-				byte[] ba = new byte[l];
-				in.readFully(ba);
-				name.addName(new String(ba));
-			}
+			name.readFields(in);
 			names.add(name);
 		}
 	}
@@ -51,11 +46,7 @@ public class ListNameWritable implements Writable {
 	public void write(DataOutput out) throws IOException {
 		out.writeInt(getNames().size());
 		for(Name name : names) {   
-			out.writeInt(name.getNames().size());
-			for(String n : name.getNames()) {
-				out.writeInt(n.length());
-				out.writeBytes(n);
-			}
+			name.write(out);
 		}
 	}
 	
