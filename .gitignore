@@ -1,2 +1,10 @@
 *.class
 bin/**
+target/**
+data/input*
+data/output
+data/output*
+unjar.notRequired
+jar
+jar/**
+hs_err_pid*.log

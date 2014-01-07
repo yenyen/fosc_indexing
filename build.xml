@@ -41,7 +41,8 @@
 	
 	<property name="data.output.dir" value="${basedir}/data/output" />
 	<property name="data.input.dir" value="${basedir}/data/input" />
-	<property name="data.file" value="enwiki-latest-pages-articles.xml.parsed.full.100"/>
+	<property name="data.firstName.dir" value="${basedir}/data/firstName" />
+	<property name="data.file" value="out.txt"/>
 	<!--
 	<property name="data.file" value="enwiki-latest-pages-articles.xml.parsed.full.100"/>
 	<property name="data.file" value="quote"/>
@@ -186,6 +187,7 @@
 			<arg value="${reducers.number}" />
 			<arg value="${data.input.dir}" />
 			<arg value="${data.output.dir}" />
+			<arg value="${data.firstName.dir}" />
 		</exec>
 	</target>
 	<target name="run-class">

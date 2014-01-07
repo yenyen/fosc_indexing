@@ -39,7 +39,7 @@ public class FormModel {
 		@XmlElement(name="AW02", type=Aw02.class),
 		@XmlElement(name="AW08", type=Aw08.class),
 		@XmlElement(name="AW17", type=Aw17.class),
-		@XmlElement(name="AW21", type=Aw21.class),
+		@XmlElement(name="AW21", type=Aw21.class)
 
 	})
 	public List<AbstractAnnotationModel> annotations;

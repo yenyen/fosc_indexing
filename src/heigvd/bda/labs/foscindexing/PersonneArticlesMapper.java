@@ -65,7 +65,7 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 		String[] sentences = FoscIndexing.sentences(value.toString());
 		boolean entrepriseFound = false;
 		StringBuilder sb = new StringBuilder();
-		Long articleId=Long.parseLong(sentences[0]);
+		Long articleId=Long.parseLong(sentences[0].trim());
 		
 		for (int i = 0; i < sentences.length; i++) {
 			if(!entrepriseFound && i > 0 && i < sentences.length - 1 && sentences[i - 1].equals("NAME") && sentences[i + 1].equals("/NAME"))

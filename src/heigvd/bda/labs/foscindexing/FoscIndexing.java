@@ -682,9 +682,6 @@ public class FoscIndexing extends Configured implements Tool {
 		job.setJarByClass(FoscIndexing.class);
 
 		job.setMapperClass(EnterpriseArticlesMapper.class);
-		/*or
-		job.setMapperClass(IndexEntrepriseNameMapper.class);
-		*/
 
 		job.setReducerClass(EnterpriseArticlesReducer.class);
 
