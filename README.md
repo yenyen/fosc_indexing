@@ -8,7 +8,7 @@ The project is divided into three sub-projects :
 
 ### [Fosc_download](https://github.com/yenyen/fosc_indexing/tree/master/fosc_download)
 
-This project contains the code used to download articles from the SOAP service of [FOSC.ch](http://fosc.ch)(https://github.com/yenyen/fosc_indexing/tree/master/DownloadFirstName)
+This project contains the code used to download articles from the SOAP service of [FOSC.ch](http://www.fosc.ch)
 
 ### [DownloadFirstName](https://github.com/yenyen/fosc_indexing/tree/master/DownloadFirstName)
 
