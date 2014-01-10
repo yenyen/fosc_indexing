@@ -42,10 +42,12 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-
+		clear();
+		
 		int i = 0, c = in.readInt();
 		int j = 0, n = 0;
 		ArrayList<Long> l;
+		
 		for (i = 0; i < c; i++) {
 			K k = createK();
 			k.readFields(in);
@@ -102,9 +104,11 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 			sb.append(':');
 			boolean isFirstOnde=true;
 			for(Long articleId:entry.getValue()){
-				sb.append(articleId);
-				if(isFirstOnde==false)
+				if(isFirstOnde)
+					isFirstOnde = false;
+				else
 					sb.append(',');
+				
 				sb.append(articleId);
 				
 				isFirstOnde=false;

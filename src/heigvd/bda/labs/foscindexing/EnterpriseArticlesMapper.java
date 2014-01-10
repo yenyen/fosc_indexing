@@ -5,7 +5,6 @@ import heigvd.bda.labs.utils.Name;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -13,15 +12,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class EnterpriseArticlesMapper extends Mapper<LongWritable, Text, Name, EnterpriseArticles> {
 	EnterpriseArticles nameArticles;
 	Name person;
+	Text entreprise;
 
 	@Override
 	protected void setup(Context context) throws IOException,
 			InterruptedException {
-		Configuration conf = context.getConfiguration();
-		
-		
 		person = new Name();
 		nameArticles = new EnterpriseArticles();
+		entreprise = new Text();
 		
 		super.setup(context);
 	}
@@ -31,28 +29,25 @@ public class EnterpriseArticlesMapper extends Mapper<LongWritable, Text, Name, E
 	@Override
 	public void map(LongWritable key, Text value, Context context)
 		throws java.io.IOException, InterruptedException {
+		String[] enterpiseInfo = value.toString().split("\t");
+		entreprise.set(enterpiseInfo[0]);
+		String[] entries = enterpiseInfo[1].split(";");
 		
-		String[] enterpiseInfo= value.toString().split("\t");
-		Text enterprise=new Text(enterpiseInfo[0]);
-		String[] entries = enterpiseInfo[0].split(";");
-		
-		for(String e:entries){
+		for(String e : entries){
+			String[] personInfo = e.split(":");
+			String[] names = personInfo[0].split(" ");
+			String[] articleIds = personInfo[1].split(",");
 
-			String[] personInfo=e.split(":");
-			String[] names=personInfo[0].split(" ");
-			String[] articleIds=personInfo[1].split(",");
-
-			for(String n:names)
+			for(String n : names)
 				person.addName(n.trim());
+			
 			for(String articleId:articleIds)
-				nameArticles.add(enterprise, Long.parseLong(articleId));
-			
-			
+				nameArticles.add(entreprise, Long.parseLong(articleId));
+
 			context.write(person, nameArticles);
 			
 			person.clear();
-			nameArticles.clear();
-			
+			nameArticles.clear();			
 		}
 	}
 }

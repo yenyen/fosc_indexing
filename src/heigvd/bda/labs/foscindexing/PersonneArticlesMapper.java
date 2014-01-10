@@ -65,8 +65,8 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 		String[] sentences = FoscIndexing.sentences(value.toString());
 		boolean entrepriseFound = false;
 		StringBuilder sb = new StringBuilder();
-		Long articleId=Long.parseLong(sentences[0].trim());
-		
+		Long articleId = Long.parseLong(sentences[0].trim());
+
 		for (int i = 0; i < sentences.length; i++) {
 			if(!entrepriseFound && i > 0 && i < sentences.length - 1 && sentences[i - 1].equals("NAME") && sentences[i + 1].equals("/NAME"))
 			{
@@ -133,10 +133,12 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 			}
 		}
 		
-	
 		if(nameArticles.haveKey()==false)
 			nameArticles.add(SPECIAL_NAME, articleId);
+		
+		//System.out.println("Out PersonneArticlesMapper: " + entreprise + ": " + nameArticles.toString());
 		context.write(entreprise, nameArticles);
 		nameArticles.clear();
+		//System.out.print("after clear: " + nameArticles.toString());
 	}
 }

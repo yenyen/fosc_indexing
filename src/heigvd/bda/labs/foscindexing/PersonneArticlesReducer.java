@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.Reducer;
  */
 public class PersonneArticlesReducer extends Reducer<Text, PersonneArticles, Text, PersonneArticles> {
 	PersonneArticles result;
-	
+	int i = 0;
 	@Override
 	protected void setup(Context context) throws IOException, InterruptedException {
 		result = new PersonneArticles();
@@ -25,7 +25,7 @@ public class PersonneArticlesReducer extends Reducer<Text, PersonneArticles, Tex
 	@Override
 	public void reduce(Text key, Iterable<PersonneArticles> values, Context context) 
 		throws IOException, InterruptedException {		
-		result.clear();
+		result.clear();	
 		for(PersonneArticles value : values) {
 			result.join(value);
 		}

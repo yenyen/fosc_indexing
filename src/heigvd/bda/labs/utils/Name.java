@@ -14,7 +14,7 @@ import org.apache.hadoop.io.*;
  * 
  * Reference: Tom White's "Hadoop the definitive guide"
  */
-public class Name implements Writable {
+public class Name implements WritableComparable {
 
 	private Set<String> tokens;
 
@@ -73,6 +73,7 @@ public class Name implements Writable {
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
+		tokens.clear();
 		int lenNames = in.readInt();
 		for(int j = 0; j < lenNames; j++) {
 			int l = in.readInt();
@@ -80,8 +81,6 @@ public class Name implements Writable {
 			in.readFully(ba);
 			tokens.add(new String(ba));
 		}
-
-		
 	}
 
 	@Override
@@ -91,13 +90,27 @@ public class Name implements Writable {
 			out.writeInt(n.length());
 			out.writeBytes(n);
 		}
-
-		
 	}
 	
 	public void clear(){
 		tokens.clear();
 	}
 	
-	
+	@Override
+	public int compareTo(Object arg0) {
+		Name name = (Name) arg0;
+		if(equals(name)){
+			return 0;
+		} else {
+			String[] otherNames = name.getNames().toArray(new String[0]);
+			String[] thisNames = tokens.toArray(new String[0]);
+			for(int i = 0; i < thisNames.length && i < otherNames.length; i++)
+			{
+				int value = thisNames[i].compareTo(otherNames[i]);
+				if(value != 0)
+					return value;
+			}
+			return thisNames.length - otherNames.length;
+		}
+	}
 }
