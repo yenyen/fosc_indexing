@@ -1,6 +1,3 @@
-fosc_indexing
-=============
-
 #Welcome to Fosx indexing
 
 The project goal is to index the articles of the FOSC.ch's database and show the links between companies, people and articles.
