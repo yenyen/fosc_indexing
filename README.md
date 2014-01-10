@@ -1,8 +1,8 @@
-#Welcome to Fosx indexing
+#Welcome to Fosc indexing
 
 The project goal is to index the articles of the FOSC.ch's database and show the links between companies, people and articles.
 
-## Projects oragnisation
+## Projects organization
 
 The project is divided into three sub-projects :
 
@@ -12,7 +12,7 @@ This project contains the code used to download articles from the SOAP service o
 
 ### [DownloadFirstName](https://github.com/yenyen/fosc_indexing/tree/master/DownloadFirstName)
 
-This project contains the code used to download the list of french firstnames from [dictionnaire-prenom.bebevallee.com](http://dictionnaire-prenom.bebevallee.com)
+This project contains the code used to download the list of french first names from [dictionnaire-prenom.bebevallee.com](http://dictionnaire-prenom.bebevallee.com)
 
 ### [Fosc_indexing](https://github.com/yenyen/fosc_indexing/tree/master/fosc_indexing)
 
