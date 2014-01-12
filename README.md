@@ -8,7 +8,9 @@ The project is divided into three sub-projects :
 
 ### [Fosc_download](https://github.com/yenyen/fosc_indexing/tree/master/fosc_download)
 
-This project contains the code used to download articles from the SOAP service of [FOSC.ch](http://www.fosc.ch)
+This project contains the code used to download articles from the SOAP service of [FOSC.ch](http://www.fosc.ch) and to search on the index create by Fosc_indexing project.
+
+Please use class *Main.java* to download all articles and *SearchMain.java* to search on index files (and download articles in pdf)
 
 ### [DownloadFirstName](https://github.com/yenyen/fosc_indexing/tree/master/DownloadFirstName)
 
