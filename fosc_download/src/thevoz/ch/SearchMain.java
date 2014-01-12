@@ -140,7 +140,6 @@ public class SearchMain {
 				do
 				{
 					IndexName index = filter.get(selection - 1);
-					System.out.print ("\b\b");
 					System.out.println(index.getName());
 					System.out.println("0. Retour");
 					System.out.println("1. Liste des noms");
@@ -197,7 +196,6 @@ public class SearchMain {
 		int selection;
 		do
 		{
-			System.out.print ("\b\b");
 			System.out.println("0. Retour");
 			for(int i = 0; i < list.size(); i++) {
 				System.out.println((i + 1) + ". " + list.get(i));
@@ -256,7 +254,6 @@ public class SearchMain {
 	
 	private static String getOptionMenu(Scanner sc)
 	{
-		System.out.print ("\b\b");
 		System.out.println("Options :");
 		System.out.println("0: Quitter");
 		System.out.println("1: Rercherche d'une entreprise");

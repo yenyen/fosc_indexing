@@ -63,66 +63,65 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 	public void map(LongWritable key, Text value, Context context)
 		throws java.io.IOException, InterruptedException {
 		String[] sentences = FoscIndexing.sentences(value.toString());
-		boolean entrepriseFound = false;
 		StringBuilder sb = new StringBuilder();
 		Long articleId = Long.parseLong(sentences[0].trim());
-
+		
+		String article = value.toString();
+		int indexOfName = article.indexOf("<NAME>");
+		if(indexOfName > 0)
+		{
+			int indexOfCloseName = article.indexOf("</NAME>");
+			entreprise.set(article.substring(indexOfName + 6, indexOfCloseName));
+		}
+		else
+		{
+			entreprise.set(SPECIAL_NAME.toString());
+		}
+		
+		
 		for (int i = 0; i < sentences.length; i++) {
-			if(!entrepriseFound && i > 0 && i < sentences.length - 1 && sentences[i - 1].equals("NAME") && sentences[i + 1].equals("/NAME"))
-			{
-				entreprise.set(sentences[i]);
-				entrepriseFound = true;
-			}
-			else
-			{
-				String[] tokens = FoscIndexing.words(sentences[i]);
-				for (int j = 1; j < tokens.length - 2; j++) {
-					if((firstNames.contains(tokens[j].toUpperCase()) || sentencesPreviousFirstNames.contains(sb.toString())) 
-							&& tokens[j].matches(REG_NAME) && !linkNeverNames.contains(tokens[j].toLowerCase()))
+			String[] tokens = FoscIndexing.words(sentences[i]);
+			for (int j = 1; j < tokens.length - 2; j++) {
+				if((firstNames.contains(tokens[j].toUpperCase()) || sentencesPreviousFirstNames.contains(sb.toString())) 
+						&& tokens[j].matches(REG_NAME) && !linkNeverNames.contains(tokens[j].toLowerCase()))
+				{
+					Name name = null;
+					if(linkNames.contains(tokens[j + 1].toLowerCase()))
 					{
-						Name name = null;
-						if(linkNames.contains(tokens[j + 1].toLowerCase()))
-						{
-							name = new Name();
-							name.addName(tokens[j + 1]);
+						name = new Name();
+						name.addName(tokens[j + 1]);
+						name.addName(tokens[j + 2]);
+					}
+					else if(tokens[j + 1].matches(REG_NAME) && 
+							!linkNeverNames.contains(tokens[j + 1].toLowerCase()) && 
+							!linkMaybeNames.contains(tokens[j + 1].toLowerCase()))
+					{
+						name = new Name();
+						name.addName(tokens[j + 1]);
+						if(linkNames.contains(tokens[j + 1]))
 							name.addName(tokens[j + 2]);
-						}
-						else if(tokens[j + 1].matches(REG_NAME) && 
-								!linkNeverNames.contains(tokens[j + 1].toLowerCase()) && 
-								!linkMaybeNames.contains(tokens[j + 1].toLowerCase()))
-						{
-							name = new Name();
-							name.addName(tokens[j + 1]);
-							if(linkNames.contains(tokens[j + 1]))
-								name.addName(tokens[j + 2]);
-						}
-						else if(tokens[j - 1].matches(REG_NAME) && !linkNeverNames.contains(tokens[j - 1].toLowerCase()))
-						{
-							name = new Name();
-							if(j > 1 && 
-									(linkNames.contains(tokens[j - 2].toLowerCase()) || linkMaybeNames.contains(tokens[j - 2].toLowerCase())))
-								name.addName(tokens[j - 2]);
-							
-							name.addName(tokens[j - 1]);
-						}
-						else if(linkMaybeNames.contains(tokens[j + 1].toLowerCase()) && tokens[j + 2].matches(REG_NAME))
-						{
-							name = new Name();
-							name.addName(tokens[j + 1]);
-							name.addName(tokens[j + 2]);
-						}
+					}
+					else if(tokens[j - 1].matches(REG_NAME) && !linkNeverNames.contains(tokens[j - 1].toLowerCase()))
+					{
+						name = new Name();
+						if(j > 1 && 
+								(linkNames.contains(tokens[j - 2].toLowerCase()) || linkMaybeNames.contains(tokens[j - 2].toLowerCase())))
+							name.addName(tokens[j - 2]);
 						
-						if(name != null)
-						{
-							name.addName(tokens[j]);
-							nameArticles.add(name, articleId);
-							sb = new StringBuilder();
-						}
-						else
-						{
-							sb.append(tokens[j]);
-							sb.append(" ");
-						}
+						name.addName(tokens[j - 1]);
+					}
+					else if(linkMaybeNames.contains(tokens[j + 1].toLowerCase()) && tokens[j + 2].matches(REG_NAME))
+					{
+						name = new Name();
+						name.addName(tokens[j + 1]);
+						name.addName(tokens[j + 2]);
+					}
+					
+					if(name != null)
+					{
+						name.addName(tokens[j]);
+						nameArticles.add(name, articleId);
+						sb = new StringBuilder();
 					}
 					else
 					{
@@ -130,12 +129,17 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 						sb.append(" ");
 					}
 				}
+				else
+				{
+					sb.append(tokens[j]);
+					sb.append(" ");
+				}
 			}
 		}
 		
 		if(nameArticles.haveKey()==false)
 			nameArticles.add(SPECIAL_NAME, articleId);
-		
+
 		context.write(entreprise, nameArticles);
 		nameArticles.clear();
 	}

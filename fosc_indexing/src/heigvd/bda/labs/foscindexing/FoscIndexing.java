@@ -39,7 +39,7 @@ public class FoscIndexing extends Configured implements Tool {
 	public static Path outputPathEntreprisePersonArticles;
 	public static Path outputPathPersonEntrepriseArticles;
 	public static Path firstNamePath;
-	public static String REG_NAME = "[A-Z][a-z?]{2,}(\\-[A-Z][a-z?]{2,})?";
+	public static String REG_NAME = "[A-Z?][a-zA-Z?]{2,}(\\-[A-Z?][a-zA-Z?]{2,})?";
 	public static int NB_TIMES_BEFORE_FIRSTNAME = 2;
 	
 	/**
