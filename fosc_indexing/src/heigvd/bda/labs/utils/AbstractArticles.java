@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map.Entry;
@@ -14,23 +15,24 @@ import org.apache.hadoop.io.Writable;
 
 public abstract class AbstractArticles<K extends Writable> implements Writable {
 
-	private Hashtable<K, List<Long>> map = new Hashtable<K, List<Long>>();
+	private Hashtable<K, Set<Long>> map = new Hashtable<K, Set<Long>>();
 
 	public void add(K k, Long v) {
-		List<Long> l = null;
-		if (map.contains(k))
+		Set<Long> l = null;
+		if (map.containsKey(k))
 			l = map.get(k);
 		else
-			map.put(k, l = new ArrayList<Long>());
+			map.put(k, l = new HashSet<Long>());
 		l.add(v);
 	}
 
 	public void add(K k, Iterable<Long> args) {
-		List<Long> l = null;
-		if (map.contains(k))
+		Set<Long> l = null;
+
+		if (map.containsKey(k))
 			l = map.get(k);
 		else
-			map.put(k, l = new ArrayList<Long>());
+			map.put(k, l = new HashSet<Long>());
 
 		for (Long v : args)
 			l.add(v);
@@ -44,16 +46,15 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 	public void readFields(DataInput in) throws IOException {
 		clear();
 		
-		int i = 0, c = in.readInt();
-		int j = 0, n = 0;
-		ArrayList<Long> l;
+		int c = in.readInt();
+		Set<Long> l;
 		
-		for (i = 0; i < c; i++) {
+		for (int i = 0; i < c; i++) {
 			K k = createK();
 			k.readFields(in);
-			n = in.readInt();
-			l = new ArrayList<Long>();
-			for (j = 0; j < n; j++) {
+			int n = in.readInt();
+			l = new HashSet<Long>();
+			for (int j = 0; j < n; j++) {
 				l.add(in.readLong());
 			}
 			map.put(k, l);
@@ -65,15 +66,15 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 	@Override
 	public void write(DataOutput out) throws IOException {
 
-		Set<Entry<K, List<Long>>> l = map.entrySet();
+		Set<Entry<K, Set<Long>>> l = map.entrySet();
 		out.writeInt(l.size());
-		for (Entry<K, List<Long>> o : l) {
+		for (Entry<K, Set<Long>> o : l) {
 			K k = o.getKey();
 			k.write(out);
-			List<Long> v = o.getValue();
+			Set<Long> v = o.getValue();
 			out.writeInt(v.size());
-			for (int i = 0; i < v.size(); i++)
-				out.writeLong(v.get(i));
+			for (Long article : v)
+				out.writeLong(article);
 		}
 
 	}
@@ -83,11 +84,10 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 	}
 
 	public void join(AbstractArticles<K> keyArticles) {
-		Set<Entry<K, List<Long>>> items = keyArticles.map.entrySet();
+		Set<Entry<K, Set<Long>>> items = keyArticles.map.entrySet();
 
-		for (Entry<K, List<Long>> entry : items) {
-			K key = entry.getKey();
-			add(key, entry.getValue());
+		for (Entry<K, Set<Long>> entry : items) {
+			add(entry.getKey(), entry.getValue());
 		}
 	}
 
@@ -97,21 +97,19 @@ public abstract class AbstractArticles<K extends Writable> implements Writable {
 		//Lorent Hugo:1,2,4,5,6;George Micheal:13,24,45,56,67;
 		
 		StringBuilder sb=new StringBuilder();
-		Set<Entry<K, List<Long>>> items = map.entrySet();
-		for (Entry<K, List<Long>> entry : items) {
+		Set<Entry<K, Set<Long>>> items = map.entrySet();
+		for (Entry<K, Set<Long>> entry : items) {
 			K key = entry.getKey();
 			sb.append(key.toString());
 			sb.append(':');
-			boolean isFirstOnde=true;
+			boolean isFirstOne = true;
 			for(Long articleId:entry.getValue()){
-				if(isFirstOnde)
-					isFirstOnde = false;
+				if(isFirstOne)
+					isFirstOne = false;
 				else
 					sb.append(',');
 				
 				sb.append(articleId);
-				
-				isFirstOnde=false;
 			}
 			sb.append(';');
 		}

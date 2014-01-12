@@ -2,6 +2,7 @@ package thevoz.ch;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -33,59 +34,36 @@ public class Main {
 
 	public static void main(String[] args) {
 		// Erstellung einer Verbindung zum Soap Server
-		String servername = "www.shab.ch";
 		String username = args[0];
 		String password = args[1];
-		int port = 9191;
 		try {
-			URL url = new URL("http://" + servername + ":" + port
-					+ "/soapserver?wsdl");
-			QName serviceName = new QName(
-					"http://notice.server.soap.common.exchange.autinform.de/",
-					"SoapServerService");
-			SoapServerService service = new SoapServerService(url, serviceName);
-			SoapServer servicePort = service.getSoapServerPort();
-			/******************* Authentication ******************************/
-			Map<String, Object> req_ctx = ((BindingProvider) servicePort)
-					.getRequestContext();
-			Map<String, List<String>> headers = new HashMap<String, List<String>>();
-
-			headers.put("username", Collections.singletonList(username));
-			headers.put("password", Collections.singletonList(password));
-			req_ctx.put(MessageContext.HTTP_REQUEST_HEADERS, headers);
-			/**********************************************************************/
-			boolean succesfulAuthentication = servicePort.getAuthentication();
-			if (succesfulAuthentication) {
-				System.out.println("Authentication successful!");
-			} else {
-				System.out.println("Authentication not successful!");
-				return;
-			}
-			
-			// Create file 
-			FileWriter fstream = new FileWriter("out.txt");
-			BufferedWriter out = new BufferedWriter(fstream);
-
-			GregorianCalendar c = new GregorianCalendar();
-			c.setTime(dateFormat.parse("14.11.2013"));
-			XMLGregorianCalendar publishDate;
-			
-			for(int j = 0; j < 365; j++) {
-				publishDate = DatatypeFactory.newInstance()
-						.newXMLGregorianCalendar(c);
-				LongArray arrayList = servicePort.getPublishedNoticeList(publishDate);
-				List<Long> noticeList = arrayList.getItem();
+			SoapServer servicePort = ServiceHelper.getService(username, password);
+			if(servicePort != null)
+			{
+				// Create file 
+				FileWriter fstream = new FileWriter("out.txt");
+				BufferedWriter out = new BufferedWriter(fstream);
 	
-				for (int i = 0; i < noticeList.size(); i++) {
-					long documentId = noticeList.get(i);
-					String contentXml = servicePort.getNoticeXml(documentId);
-					out.write(documentId + " " + contentXml.replace("\n", " ")+ "\n");
+				GregorianCalendar c = new GregorianCalendar();
+				c.setTime(dateFormat.parse("14.11.2013"));
+				XMLGregorianCalendar publishDate;
+				
+				for(int j = 0; j < 365; j++) {
+					publishDate = DatatypeFactory.newInstance()
+							.newXMLGregorianCalendar(c);
+					LongArray arrayList = servicePort.getPublishedNoticeList(publishDate);
+					List<Long> noticeList = arrayList.getItem();
+		
+					for (int i = 0; i < noticeList.size(); i++) {
+						long documentId = noticeList.get(i);
+						String contentXml = servicePort.getNoticeXml(documentId);
+						out.write(documentId + " " + contentXml.replace("\n", " ")+ "\n");
+					}
+					System.out.println(c.get(Calendar.DAY_OF_MONTH) + "." + (c.get(Calendar.MONTH) + 1) + "." + c.get(Calendar.YEAR));
+					c.add(Calendar.DAY_OF_MONTH, 1);
 				}
-				System.out.println(c.get(Calendar.DAY_OF_MONTH) + "." + (c.get(Calendar.MONTH) + 1) + "." + c.get(Calendar.YEAR));
-				c.add(Calendar.DAY_OF_MONTH, 1);
+				out.close();
 			}
-			
-			out.close();
 			System.out.println("FIN");
 		} catch (Fault f) {
 			 System.out.println("Fault Code:" + f.getFaultInfo().getCode()); 
@@ -96,4 +74,6 @@ public class Main {
 			e.printStackTrace();
 		}
 	}
+
+
 }

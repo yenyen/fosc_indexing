@@ -26,9 +26,11 @@ public class PersonneArticlesReducer extends Reducer<Text, PersonneArticles, Tex
 	public void reduce(Text key, Iterable<PersonneArticles> values, Context context) 
 		throws IOException, InterruptedException {		
 		result.clear();	
+
 		for(PersonneArticles value : values) {
 			result.join(value);
 		}
+		
 		context.write(key, result);
 	}
 }

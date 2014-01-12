@@ -136,9 +136,7 @@ public class PersonneArticlesMapper extends Mapper<LongWritable, Text, Text, Per
 		if(nameArticles.haveKey()==false)
 			nameArticles.add(SPECIAL_NAME, articleId);
 		
-		//System.out.println("Out PersonneArticlesMapper: " + entreprise + ": " + nameArticles.toString());
 		context.write(entreprise, nameArticles);
 		nameArticles.clear();
-		//System.out.print("after clear: " + nameArticles.toString());
 	}
 }
